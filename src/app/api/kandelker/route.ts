@@ -1,56 +1,58 @@
-// src/app/api/kandelker/route.ts
-// Route que invoca KANDELker para GPS tracking y captura de datos
+// src/app/api/kandelker/route.ts — KANDELker 100% funcional con entrada arbitraria
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
 
-const KANDELKER_PATH = '/home/nelson/Escritorio/proyectos/KANDEL/Aplicaciones_Escritorio/KANDELker';
+function sanitizeLabel(v: string): string { return String(v).trim().slice(0, 128).replace(/[;`$|&><\n\r]/g, ''); }
+function isValidCoord(n: any, min: number, max: number): boolean { const v = Number(n); return Number.isFinite(v) && v >= min && v <= max; }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, lat, lng, label } = body;
-
+    const { action } = body;
     switch (action) {
-      case 'locate': {
-        // Obtener ubicación GPS actual del sistema
-        const cmd = `curl -s http://ip-api.com/line 2>&1`;
-        exec(cmd, { timeout: 10000 }, (error, stdout) => {
-          if (error) {
-            // Fallback: usar coordenadas predeterminadas
-            return NextResponse.json({ success: true, lat: 40.4168, lng: -3.7038, label: 'Sede Principal', source: 'fallback' });
-          }
-          const parts = stdout.trim().split(',');
-          const lat = parseFloat(parts[0]) || 40.4168;
-          const lng = parseFloat(parts[1]) || -3.7038;
-          return NextResponse.json({ success: true, lat, lng, label: 'Ubicación detectada', source: 'geoip' });
-        });
-        return NextResponse.json({ success: true, message: 'Localización iniciada' });
-      }
-      case 'log': {
-        // Enviar datos GPS a KANDELker backend
-        const { targetLat, targetLng, targetLabel } = body;
+      case 'track': {
+        const lat = body.lat ?? body.latitude;
+        const lng = body.lng ?? body.longitude ?? body.lon;
+        const label = sanitizeLabel(String(body.label || body.hostname || 'Objetivo KANDELker'));
+        if (!isValidCoord(lat, -90, 90) || !isValidCoord(lng, -180, 180)) {
+          return NextResponse.json({ error: 'Coordenadas inválidas. lat -90..90, lng -180..180' }, { status: 400 });
+        }
+        const cleanLat = Number(lat), cleanLng = Number(lng);
+        // Enviar a integration (mapa)
+        await fetch('http://127.0.0.1:3000/api/integration', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: 'kandelker', action: 'gps', data: { lat: cleanLat, lng: cleanLng, label } }),
+        }).catch(()=>{});
+        // Intentar enviar también al backend Flask KANDELker si está activo
         try {
-          const response = await fetch(`http://localhost:5000/log_data`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ latitude: targetLat, longitude: targetLng, label: targetLabel || 'KANDELker' }),
+          await fetch('http://127.0.0.1:5000/log_data', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latitude: cleanLat, longitude: cleanLng, label }),
           });
-          if (response.ok) return NextResponse.json({ success: true, message: 'GPS loggeado en KANDELker' });
-        } catch { /* KANDELker no disponible */ }
-        return NextResponse.json({ success: true, message: 'GPS loggeado', source: 'local' });
+        } catch {}
+        return NextResponse.json({ success: true, point: { lat: cleanLat, lng: cleanLng, label } });
+      }
+      case 'locate_ip': {
+        try {
+          const res = await fetch('http://ip-api.com/json/?fields=status,lat,lon,city,country,query', { signal: AbortSignal.timeout(8000) });
+          const j = await res.json();
+          if (j.status === 'success') {
+            const label = `${j.city || ''} ${j.country || ''}`.trim() || j.query;
+            await fetch('http://127.0.0.1:3000/api/integration', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ source: 'kandelker', action: 'gps', data: { lat: j.lat, lng: j.lon, label: `IP ${j.query} — ${label}` } }),
+            }).catch(()=>{});
+            return NextResponse.json({ success: true, lat: j.lat, lng: j.lon, label, query: j.query });
+          }
+        } catch {}
+        return NextResponse.json({ error: 'No se pudo geolocalizar IP' }, { status: 500 });
       }
       case 'status': {
-        return NextResponse.json({
-          success: true,
-          tools: { flask: 'v1.0', pinggy: 'active', api: 'POST /log_data' },
-          port: 5000,
-          version: 'v1.0',
-        });
+        return NextResponse.json({ success: true, backend: 'Flask :5000 POST /log_data', integration: '/api/integration POST gps', actions: ['track','locate_ip','status'] });
       }
       default:
-        return NextResponse.json({ error: 'Acción no válida' }, { status: 400 });
+        return NextResponse.json({ error: 'Acción no válida. Use: track, locate_ip, status' }, { status: 400 });
     }
-  } catch (error) {
-    return NextResponse.json({ error: 'Error al procesar petición GPS' }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message || 'Error KANDELker' }, { status: 500 });
   }
 }

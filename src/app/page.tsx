@@ -166,6 +166,16 @@ export default function Dashboard() {
   const [showAuditPanel, setShowAuditPanel] = useState(false);
   const [auditLog, setAuditLog] = useState<string[]>([]);
   const [activeTool, setActiveTool] = useState<'all' | 'kandelscan' | 'kandelcrack' | 'kandellimiter' | 'kandelker'>('all');
+  // Entradas arbitrarias 100% funcionales
+  const [scanTarget, setScanTarget] = useState('');
+  const [crackBssid, setCrackBssid] = useState('');
+  const [crackSsid, setCrackSsid] = useState('');
+  const [crackChannel, setCrackChannel] = useState('6');
+  const [limiterIp, setLimiterIp] = useState('');
+  const [limiterMac, setLimiterMac] = useState('');
+  const [kerLat, setKerLat] = useState('');
+  const [kerLng, setKerLng] = useState('');
+  const [kerLabel, setKerLabel] = useState('');
 
   const fetchKandelData = useCallback(async (endpoint: string) => {
     try { const res = await fetch(`/api/integration?type=${endpoint}`); if (res.ok) { const json = await res.json(); setKandelData(prev => ({ ...prev, [endpoint === 'summary' ? 'summary' : endpoint === 'vulnerabilities' ? 'vulnerabilities' : endpoint === 'wifi' ? 'wifiNetworks' : endpoint === 'devices' ? 'networkDevices' : 'gpsPoints']: endpoint === 'summary' ? json : json, summary: endpoint === 'summary' ? json : prev.summary })); } } catch { /* silencioso */ }
@@ -185,8 +195,8 @@ export default function Dashboard() {
     setAuditLog(prev => [...prev, `[KANDELlimiter] ▶ ${action} en ${ip}...`]);
     try { const limitKB = 3072; const res = await fetch('/api/kandellimiter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ip, limitKB }) }); const json = await res.json(); if (json.success) setAuditLog(prev => [...prev, `[KANDELlimiter] ✅ ${json.action} en ${ip}`]); } catch (e) { setAuditLog(prev => [...prev, `[KANDELlimiter] ❌ Error: ${e}`]); } }
 
-  const callKandelker = async (action: 'locate' | 'log') => {
-    setAuditLog(prev => [...prev, `[KANDELker] ▶ ${action === 'locate' ? 'Localizando' : 'Logeando'} GPS...`]);
+  const callKandelker = async (action: 'locate_ip' | 'locate' | 'log') => {
+    setAuditLog(prev => [...prev, `[KANDELker] ▶ ${action === 'locate_ip' ? 'Geolocalizando IP' : action === 'locate' ? 'Localizando' : 'Logeando'} GPS...`]);
     try { const res = await fetch('/api/kandelker', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) }); const json = await res.json(); if (json.success) setAuditLog(prev => [...prev, `[KANDELker] ✅ ${json.label || 'GPS registrado'}`]); } catch (e) { setAuditLog(prev => [...prev, `[KANDELker] ❌ Error: ${e}`]); } }
 
   const runFullAudit = async () => {
@@ -1458,28 +1468,56 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-            {/* Controles de herramientas */}
-            <div className="space-y-1.5 mb-3">
-              {activeTool === 'all' || activeTool === 'kandelscan' ? (
-                <button onClick={() => callKandelscan('192.168.1.0/24')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
-                  ⊕ KANDELscan — Nuclei Vulnerability Scan
-                </button>
-              ) : null}
-              {activeTool === 'all' || activeTool === 'kandelcrack' ? (
-                <button onClick={() => callKandelcrack('wlp3s0')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
-                  📡 KANDELcrack — Wi-Fi Audit
-                </button>
-              ) : null}
-              {activeTool === 'all' || activeTool === 'kandellimiter' ? (
-                <button onClick={() => callKandellimiter('192.168.1.0/24', 'scan')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
-                  ◈ KANDELlimiter — Device Scan
-                </button>
-              ) : null}
-              {activeTool === 'all' || activeTool === 'kandelker' ? (
-                <button onClick={() => callKandelker('locate')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
-                  ◎ KANDELker — GPS Locate
-                </button>
-              ) : null}
+            {/* Controles 100% funcionales — entrada arbitraria */}
+            <div className="space-y-2 mb-3">
+              {(activeTool === 'all' || activeTool === 'kandelscan') && (
+                <div className="bg-[#8A2BE2]/10 border border-[#8A2BE2]/30 rounded-lg p-2">
+                  <p className="text-[9px] font-mono text-[#8A2BE2] tracking-[0.15em] mb-1.5">⊕ KANDELscan — Dominio/IP arbitrario</p>
+                  <input value={scanTarget} onChange={e=>setScanTarget(e.target.value)} placeholder="ej: example.com, 192.168.1.1, https://target.com" className="w-full px-2 py-1.5 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none mb-1.5" />
+                  <button onClick={() => { if(!scanTarget.trim()){setAuditLog(p=>[...p,'[KANDELscan] ⚠ Ingrese dominio/IP']); return;} callKandelscan(scanTarget.trim()); }} disabled={auditRunning} className="w-full py-1 rounded bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.1em] hover:bg-[#8A2BE2]/30 disabled:opacity-50">▶ ESCANEAR VULNERABILIDADES</button>
+                </div>
+              )}
+              {(activeTool === 'all' || activeTool === 'kandelcrack') && (
+                <div className="bg-[#8A2BE2]/10 border border-[#8A2BE2]/30 rounded-lg p-2">
+                  <p className="text-[9px] font-mono text-[#8A2BE2] tracking-[0.15em] mb-1.5">📡 KANDELcrack — Red Wi-Fi arbitraria</p>
+                  <div className="grid grid-cols-2 gap-1 mb-1">
+                    <input value={crackBssid} onChange={e=>setCrackBssid(e.target.value)} placeholder="BSSID AA:BB:CC:DD:EE:FF" className="px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none" />
+                    <input value={crackSsid} onChange={e=>setCrackSsid(e.target.value)} placeholder="SSID (opcional)" className="px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none" />
+                  </div>
+                  <div className="flex gap-1 mb-1.5">
+                    <input value={crackChannel} onChange={e=>setCrackChannel(e.target.value)} placeholder="Canal 1-13" className="w-20 px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none" />
+                    <button onClick={async()=>{ if(!crackBssid.trim()){setAuditLog(p=>[...p,'[KANDELcrack] ⚠ Ingrese BSSID']); return;} try{ const r=await fetch('/api/kandelcrack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add_network',bssid:crackBssid.trim(),ssid:crackSsid.trim(),channel:crackChannel})}); const j=await r.json(); setAuditLog(p=>[...p,j.success?`[KANDELcrack] ✅ Red ${crackBssid} registrada`:`[KANDELcrack] ❌ ${j.error}`]); pollKandelData(); }catch(e:any){setAuditLog(p=>[...p,`[KANDELcrack] ❌ ${e.message}`]);} }} disabled={auditRunning} className="flex-1 py-1 rounded bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold hover:bg-[#8A2BE2]/30 disabled:opacity-50">⊕ REGISTRAR RED</button>
+                  </div>
+                  <button onClick={()=>callKandelcrack('wlp3s0')} disabled={auditRunning} className="w-full py-1 rounded bg-black/20 border border-white/10 text-white/60 text-[9px] font-mono hover:bg-white/10 disabled:opacity-50">📡 Detectar interfaces Wi-Fi</button>
+                </div>
+              )}
+              {(activeTool === 'all' || activeTool === 'kandellimiter') && (
+                <div className="bg-[#8A2BE2]/10 border border-[#8A2BE2]/30 rounded-lg p-2">
+                  <p className="text-[9px] font-mono text-[#8A2BE2] tracking-[0.15em] mb-1.5">◈ KANDELlimiter — Dispositivo arbitrario</p>
+                  <div className="grid grid-cols-2 gap-1 mb-1">
+                    <input value={limiterIp} onChange={e=>setLimiterIp(e.target.value)} placeholder="IP ej: 192.168.1.50" className="px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none" />
+                    <input value={limiterMac} onChange={e=>setLimiterMac(e.target.value)} placeholder="MAC (opcional)" className="px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none" />
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={async()=>{ if(!limiterIp.trim()){setAuditLog(p=>[...p,'[KANDELlimiter] ⚠ Ingrese IP']); return;} try{ const r=await fetch('/api/kandellimiter',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add_device',ip:limiterIp.trim(),mac:limiterMac.trim(),status:'active'})}); const j=await r.json(); setAuditLog(p=>[...p,j.success?`[KANDELlimiter] ✅ ${limiterIp} agregado`:`[KANDELlimiter] ❌ ${j.error}`]); pollKandelData(); }catch(e:any){setAuditLog(p=>[...p,`[KANDELlimiter] ❌ ${e.message}`]);} }} disabled={auditRunning} className="flex-1 py-1 rounded bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold hover:bg-[#8A2BE2]/30 disabled:opacity-50">⊕ AGREGAR</button>
+                    <button onClick={()=>callKandellimiter(limiterIp.trim()||'192.168.15.0/24','scan')} disabled={auditRunning} className="flex-1 py-1 rounded bg-black/20 border border-white/10 text-white/60 text-[9px] font-mono hover:bg-white/10 disabled:opacity-50">◈ ESCANEAR RED</button>
+                  </div>
+                </div>
+              )}
+              {(activeTool === 'all' || activeTool === 'kandelker') && (
+                <div className="bg-[#8A2BE2]/10 border border-[#8A2BE2]/30 rounded-lg p-2">
+                  <p className="text-[9px] font-mono text-[#8A2BE2] tracking-[0.15em] mb-1.5">◎ KANDELker — Coordenadas arbitrarias</p>
+                  <div className="grid grid-cols-2 gap-1 mb-1">
+                    <input value={kerLat} onChange={e=>setKerLat(e.target.value)} placeholder="Lat -90..90" className="px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none" />
+                    <input value={kerLng} onChange={e=>setKerLng(e.target.value)} placeholder="Lng -180..180" className="px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none" />
+                  </div>
+                  <input value={kerLabel} onChange={e=>setKerLabel(e.target.value)} placeholder="Etiqueta (opcional)" className="w-full px-2 py-1 rounded bg-black/40 border border-white/10 text-[10px] font-mono text-white placeholder:text-white/40 focus:border-[#8A2BE2]/50 focus:outline-none mb-1.5" />
+                  <div className="flex gap-1">
+                    <button onClick={async()=>{ if(!kerLat||!kerLng){setAuditLog(p=>[...p,'[KANDELker] ⚠ Ingrese lat/lng']); return;} try{ const r=await fetch('/api/kandelker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'track',lat:kerLat,lng:kerLng,label:kerLabel})}); const j=await r.json(); setAuditLog(p=>[...p,j.success?`[KANDELker] ✅ ${kerLat},${kerLng} registrado`:`[KANDELker] ❌ ${j.error}`]); pollKandelData(); }catch(e:any){setAuditLog(p=>[...p,`[KANDELker] ❌ ${e.message}`]);} }} disabled={auditRunning} className="flex-1 py-1 rounded bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold hover:bg-[#8A2BE2]/30 disabled:opacity-50">◎ TRACK GPS</button>
+                    <button onClick={()=>callKandelker('locate_ip')} disabled={auditRunning} className="flex-1 py-1 rounded bg-black/20 border border-white/10 text-white/60 text-[9px] font-mono hover:bg-white/10 disabled:opacity-50">◎ IP LOCATE</button>
+                  </div>
+                </div>
+              )}
             </div>
             <button onClick={runFullAudit} disabled={auditRunning} className="w-full py-2 rounded-lg bg-[var(--gold-primary)]/20 border border-[var(--gold-primary)]/50 text-[var(--gold-primary)] text-xs font-mono font-bold tracking-[0.2em] hover:bg-[var(--gold-primary)]/30 transition-all disabled:opacity-50">
               {auditRunning ? '⏳ EN PROGRESO...' : '▶ AUDITORÍA COMPLETA (4 HERRAMIENTAS)'}
