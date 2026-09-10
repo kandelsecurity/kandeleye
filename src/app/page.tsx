@@ -165,6 +165,7 @@ export default function Dashboard() {
   const [auditRunning, setAuditRunning] = useState(false);
   const [showAuditPanel, setShowAuditPanel] = useState(false);
   const [auditLog, setAuditLog] = useState<string[]>([]);
+  const [activeTool, setActiveTool] = useState<'all' | 'kandelscan' | 'kandelcrack' | 'kandellimiter' | 'kandelker'>('all');
 
   const fetchKandelData = useCallback(async (endpoint: string) => {
     try { const res = await fetch(`/api/integration?type=${endpoint}`); if (res.ok) { const json = await res.json(); setKandelData(prev => ({ ...prev, [endpoint === 'summary' ? 'summary' : endpoint === 'vulnerabilities' ? 'vulnerabilities' : endpoint === 'wifi' ? 'wifiNetworks' : endpoint === 'devices' ? 'networkDevices' : 'gpsPoints']: endpoint === 'summary' ? json : json, summary: endpoint === 'summary' ? json : prev.summary })); } } catch { /* silencioso */ }
@@ -172,14 +173,36 @@ export default function Dashboard() {
 
   const pollKandelData = useCallback(() => { fetchKandelData('summary'); fetchKandelData('vulnerabilities'); fetchKandelData('wifi'); fetchKandelData('devices'); fetchKandelData('gps'); }, [fetchKandelData]);
 
-  const startAudit = async () => {
-    setAuditRunning(true); setAuditLog(['[KANDELeye] 🔄 Auditoría integrada iniciada...']);
+  const callKandelscan = async (target: string) => {
+    setAuditLog(prev => [...prev, `[KANDELscan] ▶ Escaneando ${target} con Nuclei...`]);
+    try { const res = await fetch('/api/kandelscan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target }) }); const json = await res.json(); if (json.success) { setAuditLog(prev => [...prev, `[KANDELscan] ✅ ${json.count} vulnerabilidades encontradas`]); json.vulnerabilities.forEach((v: any) => fetch('/api/integration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'kandelscan', action: 'vulnerability', data: v }) })); } } catch (e) { setAuditLog(prev => [...prev, `[KANDELscan] ❌ Error: ${e}`]); } }
+
+  const callKandelcrack = async (iface: string) => {
+    setAuditLog(prev => [...prev, `[KANDELcrack] ▶ Escaneando redes Wi-Fi en ${iface}...`]);
+    try { const res = await fetch('/api/kandelcrack', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'scan', interface: iface }) }); const json = await res.json(); if (json.success) { setAuditLog(prev => [...prev, `[KANDELcrack] ✅ ${json.count} redes detectadas`]); json.networks.forEach((n: any) => fetch('/api/integration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'kandelcrack', action: 'network', data: n }) })); } } catch (e) { setAuditLog(prev => [...prev, `[KANDELcrack] ❌ Error: ${e}`]); } }
+
+  const callKandellimiter = async (ip: string, action: 'scan' | 'limit' | 'block' | 'unlimit') => {
+    setAuditLog(prev => [...prev, `[KANDELlimiter] ▶ ${action} en ${ip}...`]);
+    try { const limitKB = 3072; const res = await fetch('/api/kandellimiter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ip, limitKB }) }); const json = await res.json(); if (json.success) setAuditLog(prev => [...prev, `[KANDELlimiter] ✅ ${json.action} en ${ip}`]); } catch (e) { setAuditLog(prev => [...prev, `[KANDELlimiter] ❌ Error: ${e}`]); } }
+
+  const callKandelker = async (action: 'locate' | 'log') => {
+    setAuditLog(prev => [...prev, `[KANDELker] ▶ ${action === 'locate' ? 'Localizando' : 'Logeando'} GPS...`]);
+    try { const res = await fetch('/api/kandelker', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) }); const json = await res.json(); if (json.success) setAuditLog(prev => [...prev, `[KANDELker] ✅ ${json.label || 'GPS registrado'}`]); } catch (e) { setAuditLog(prev => [...prev, `[KANDELker] ❌ Error: ${e}`]); } }
+
+  const runFullAudit = async () => {
+    setAuditRunning(true); setAuditLog(['[KANDELeye] 🔄 Auditoría completa iniciada...']);
     try {
       await fetch('/api/integration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'audit', action: 'start', data: {} }) });
       setAuditLog(prev => [...prev, '[KANDELeye] ✅ Estado: Auditoría activa']);
-      const steps = ['[KANDELscan] Escaneando vulnerabilidades...', '[KANDELcrack] Detectando redes Wi-Fi...', '[KANDELlimiter] Identificando dispositivos...', '[KANDELker] Rastreando GPS...'];
-      for (const step of steps) { setAuditLog(prev => [...prev, step]); await new Promise(r => setTimeout(r, 1500)); }
-      setAuditLog(prev => [...prev, '[KANDELeye] ✅ Auditoría completa. Datos recopilados.']); pollKandelData();
+      const steps = [
+        () => callKandelscan('192.168.1.0/24'),
+        () => callKandelcrack('wlp3s0'),
+        () => callKandellimiter('192.168.1.0/24', 'scan'),
+        () => callKandelker('locate'),
+      ];
+      for (const step of steps) { await step(); await new Promise(r => setTimeout(r, 2000)); }
+      setAuditLog(prev => [...prev, '[KANDELeye] ✅ Auditoría completa. Todos los datos recopilados.']);
+      pollKandelData();
     } catch { /* silencioso */ }
     setAuditRunning(false);
   };
@@ -1302,7 +1325,7 @@ export default function Dashboard() {
           <ViewSegment layoutId="view-style" active={mapStyle === 'dark'} onClick={() => setMapStyle('dark')} title="Night Mode" icon={Moon} label="MAP" />
           <ViewSegment layoutId="view-style" active={mapStyle === 'satellite'} onClick={() => setMapStyle('satellite')} title="Satellite View" icon={Satellite} label="SAT" />
           <div className="w-px h-5 mx-1 bg-[var(--border-secondary)]" />
-          <button onClick={startAudit} disabled={auditRunning} title="Auditoría integrada KANDEL" aria-label="Auditar" className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono font-medium tracking-[0.15em] transition-all duration-200 ${auditRunning ? 'text-[var(--alert-green)] bg-[var(--alert-green)]/10' : 'text-[var(--gold-light)] hover:text-[var(--gold-primary)] hover:bg-[var(--gold-primary)]/10'}`}>
+          <button onClick={runFullAudit} disabled={auditRunning} title="Auditoría completa KANDEL" aria-label="Auditar" className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono font-medium tracking-[0.15em] transition-all duration-200 ${auditRunning ? 'text-[var(--alert-green)] bg-[var(--alert-green)]/10' : 'text-[var(--gold-light)] hover:text-[var(--gold-primary)] hover:bg-[var(--gold-primary)]/10'}`}>
             <Shield className="w-3 h-3" />
             <span>{auditRunning ? 'AUDIT...' : 'AUDIT'}</span>
           </button>
@@ -1390,39 +1413,76 @@ export default function Dashboard() {
 
       {/* ── KANDEL AUDIT PANEL ── */}
       {showAuditPanel && (
-        <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="absolute bottom-4 right-4 z-[300] w-[min(90vw,420px)] max-h-[50vh] overflow-y-auto pointer-events-auto bg-[var(--bg-panel)] border border-[var(--border-primary)] rounded-xl backdrop-blur-2xl shadow-[0_8px_32px_rgba(138,43,226,0.2)]">
+        <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="absolute bottom-4 right-4 z-[300] w-[min(90vw,420px)] max-h-[55vh] overflow-y-auto pointer-events-auto bg-[var(--bg-panel)] border border-[var(--border-primary)] rounded-xl backdrop-blur-2xl shadow-[0_8px_32px_rgba(138,43,226,0.2)]">
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold tracking-[0.3em] text-[var(--gold-primary)] font-mono">🔒 KANDELeye AUDITORÍA</h2>
+              <h2 className="text-sm font-bold tracking-[0.3em] text-[var(--gold-primary)] font-mono">🔒 KANDELeye CENTRO DE MANDO</h2>
               <button onClick={() => setShowAuditPanel(false)} className="text-[var(--text-muted)] hover:text-white text-xs">✕</button>
             </div>
-            <div className="space-y-2 mb-3">
+            {/* Tabs de herramientas */}
+            <div className="flex gap-1 mb-3 flex-wrap">
+              {[
+                { key: 'all', label: 'TODAS', icon: '◎' },
+                { key: 'kandelscan', label: 'SCAN', icon: '⊕' },
+                { key: 'kandelcrack', label: 'WIFI', icon: '📡' },
+                { key: 'kandellimiter', label: 'RED', icon: '◈' },
+                { key: 'kandelker', label: 'GPS', icon: '◎' },
+              ].map(t => (
+                <button key={t.key} onClick={() => setActiveTool(t.key as any)} className={`px-2 py-1 rounded text-[9px] font-mono tracking-[0.1em] transition-all ${activeTool === t.key ? 'bg-[var(--gold-primary)]/30 text-[var(--gold-primary)] border border-[var(--gold-primary)]/50' : 'text-[var(--text-muted)] hover:text-white border border-transparent'}`}>
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-1.5 mb-3 max-h-[150px] overflow-y-auto styled-scrollbar">
               {auditLog.map((entry, i) => (
                 <p key={i} className="text-[10px] font-mono text-[var(--text-secondary)]">{entry}</p>
               ))}
             </div>
             {kandelData.summary && (
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-2 text-center">
-                  <p className="text-lg font-bold text-[var(--gold-primary)]">{kandelData.summary.criticalVulnerabilities + kandelData.summary.highVulnerabilities}</p>
-                  <p className="text-[9px] font-mono text-[var(--text-muted)]">VULNERABILIDADES</p>
+              <div className="grid grid-cols-4 gap-1.5 mb-3">
+                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-1.5 text-center">
+                  <p className="text-base font-bold text-[var(--gold-primary)]">{kandelData.summary.criticalVulnerabilities + kandelData.summary.highVulnerabilities}</p>
+                  <p className="text-[8px] font-mono text-[var(--text-muted)]">VULN</p>
                 </div>
-                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-2 text-center">
-                  <p className="text-lg font-bold text-[var(--gold-primary)]">{kandelData.summary.totalWiFiNetworks}</p>
-                  <p className="text-[9px] font-mono text-[var(--text-muted)]">REDES WIFI</p>
+                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-1.5 text-center">
+                  <p className="text-base font-bold text-[var(--gold-primary)]">{kandelData.summary.totalWiFiNetworks}</p>
+                  <p className="text-[8px] font-mono text-[var(--text-muted)]">WIFI</p>
                 </div>
-                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-2 text-center">
-                  <p className="text-lg font-bold text-[var(--gold-primary)]">{kandelData.summary.totalNetworkDevices}</p>
-                  <p className="text-[9px] font-mono text-[var(--text-muted)]">DISPOSITIVOS</p>
+                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-1.5 text-center">
+                  <p className="text-base font-bold text-[var(--gold-primary)]">{kandelData.summary.totalNetworkDevices}</p>
+                  <p className="text-[8px] font-mono text-[var(--text-muted)]">DEV</p>
                 </div>
-                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-2 text-center">
-                  <p className="text-lg font-bold text-[var(--gold-primary)]">{kandelData.summary.totalGPSPoints}</p>
-                  <p className="text-[9px] font-mono text-[var(--text-muted)]">PUNTOS GPS</p>
+                <div className="bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 rounded-lg p-1.5 text-center">
+                  <p className="text-base font-bold text-[var(--gold-primary)]">{kandelData.summary.totalGPSPoints}</p>
+                  <p className="text-[8px] font-mono text-[var(--text-muted)]">GPS</p>
                 </div>
               </div>
             )}
-            <button onClick={startAudit} disabled={auditRunning} className="w-full py-2 rounded-lg bg-[var(--gold-primary)]/20 border border-[var(--gold-primary)]/50 text-[var(--gold-primary)] text-xs font-mono font-bold tracking-[0.2em] hover:bg-[var(--gold-primary)]/30 transition-all disabled:opacity-50">
-              {auditRunning ? '⏳ EN PROGRESO...' : '▶ EJECUTAR AUDITORÍA COMPLETA'}
+            {/* Controles de herramientas */}
+            <div className="space-y-1.5 mb-3">
+              {activeTool === 'all' || activeTool === 'kandelscan' ? (
+                <button onClick={() => callKandelscan('192.168.1.0/24')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
+                  ⊕ KANDELscan — Nuclei Vulnerability Scan
+                </button>
+              ) : null}
+              {activeTool === 'all' || activeTool === 'kandelcrack' ? (
+                <button onClick={() => callKandelcrack('wlp3s0')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
+                  📡 KANDELcrack — Wi-Fi Audit
+                </button>
+              ) : null}
+              {activeTool === 'all' || activeTool === 'kandellimiter' ? (
+                <button onClick={() => callKandellimiter('192.168.1.0/24', 'scan')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
+                  ◈ KANDELlimiter — Device Scan
+                </button>
+              ) : null}
+              {activeTool === 'all' || activeTool === 'kandelker' ? (
+                <button onClick={() => callKandelker('locate')} disabled={auditRunning} className="w-full py-1.5 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/50 text-[#8A2BE2] text-[10px] font-mono font-bold tracking-[0.15em] hover:bg-[#8A2BE2]/30 transition-all disabled:opacity-50">
+                  ◎ KANDELker — GPS Locate
+                </button>
+              ) : null}
+            </div>
+            <button onClick={runFullAudit} disabled={auditRunning} className="w-full py-2 rounded-lg bg-[var(--gold-primary)]/20 border border-[var(--gold-primary)]/50 text-[var(--gold-primary)] text-xs font-mono font-bold tracking-[0.2em] hover:bg-[var(--gold-primary)]/30 transition-all disabled:opacity-50">
+              {auditRunning ? '⏳ EN PROGRESO...' : '▶ AUDITORÍA COMPLETA (4 HERRAMIENTAS)'}
             </button>
           </div>
         </motion.div>
