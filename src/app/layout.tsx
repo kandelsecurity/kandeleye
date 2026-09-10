@@ -3,12 +3,12 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import "./globals.css";
 
 const SITE_URL = "https://osirisai.live";
-const SITE_NAME = "OSIRIS";
-const SITE_TITLE = "OSIRIS — Open Source Intelligence Platform | Live Flight Tracking, CCTV, OSINT Tools & More";
-const SITE_DESCRIPTION = "The open-source Palantir alternative. Track 10,000+ aircraft, 2,000 satellites, and worldwide CCTV cameras in real-time on a 3D globe. Run Nmap scans, DNS lookups, WHOIS queries, SSL cert analysis & threat intelligence — all from your browser. 20+ live data feeds including earthquakes, wildfires, nuclear facilities, cyber threats, and global conflicts. Free & open source.";
+const SITE_NAME = "KANDELeye";
+const SITE_TITLE = "KANDELeye — Plataforma Unificada de Inteligencia y Auditoría | OSINT en Vivo";
+const SITE_DESCRIPTION = "La alternativa open source a Palantir. Monitorea más de 10,000 aeronaves, 2,000 satélites y 17,000 cámaras CCTV en tiempo real en un globo 3D. Escaneos Nmap, búsquedas DNS, consultas WHOIS, análisis de certificados SSL e inteligencia de amenazas — todo desde tu navegador. Más de 20 fuentes de datos en vivo incluyendo terremotos, incendios, ciberamenazas y conflictos globales. Gratis y de código abierto.";
 
 export const viewport: Viewport = {
-  themeColor: "#D4AF37",
+  themeColor: "#0F0A15",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -19,11 +19,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
-    template: "%s | OSIRIS Intelligence",
+    template: "%s | KANDELeye Inteligencia",
   },
   description: SITE_DESCRIPTION,
   keywords: [
-    // OSINT Tools - Primary focus
+    "herramientas OSINT", "inteligencia de fuentes abiertas", "plataforma de inteligencia",
+    "escaneo de vulnerabilidades", "auditoría de seguridad", "ciberseguridad",
     "OSINT tools", "free OSINT tools", "online OSINT toolkit", "OSINT framework",
     "nmap online", "nmap scanner online", "free nmap scan", "port scanner online",
     "DNS lookup tool", "WHOIS lookup", "reverse DNS", "DNS records",
@@ -33,13 +34,9 @@ export const metadata: Metadata = {
     "network reconnaissance", "recon tools", "penetration testing tools",
     "cybersecurity tools", "infosec tools", "security scanner",
     "linux OSINT tools", "kali linux tools online", "OSINT browser tools",
-    
-    // Intelligence Platform
     "OSINT", "open source intelligence", "intelligence platform", "global intelligence",
     "geospatial intelligence", "GEOINT", "SIGINT", "real-time tracking",
     "palantir alternative", "open source palantir", "intelligence dashboard",
-    
-    // Tracking & Data
     "flight tracker", "aircraft tracking", "ADS-B tracker", "live flight radar",
     "satellite tracking", "ISS tracker", "space station tracker",
     "CCTV cameras live", "security cameras worldwide", "live cameras",
@@ -50,13 +47,11 @@ export const metadata: Metadata = {
     "cyber threats dashboard", "CVE tracker",
     "space weather", "solar storm", "GPS jamming",
     "defense stocks", "commodities tracker",
-    
-    // Brand
-    "osiris", "osirisai", "osirisai.live",
+    "kandeleye", "kandelsecurity", "kandeleye.live",
   ],
-  authors: [{ name: "Osiris Project", url: SITE_URL }],
-  creator: "Osiris Project",
-  publisher: "Osiris Project",
+  authors: [{ name: "KANDEL Security", url: SITE_URL }],
+  creator: "KANDEL Security",
+  publisher: "KANDEL Security",
   robots: {
     index: true,
     follow: true,
@@ -91,28 +86,28 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: "OSIRIS — The Open-Source Palantir Alternative | Live Flights, CCTV, Satellites & OSINT Tools",
-    description: "Track 10K+ aircraft, 2K satellites & worldwide CCTV on a 3D globe. Run Nmap, DNS, WHOIS & threat intel scans from your browser. 20+ live intelligence feeds. Free. Open source.",
+    title: "KANDELeye — La Alternativa Open Source a Palantir | Vuelos, CCTV, Satélites y OSINT",
+    description: "Monitorea más de 10,000 aeronaves, 2,000 satélites y CCTV mundial en un globo 3D. Escaneos Nmap, DNS, WHOIS e inteligencia de amenazas desde tu navegador. Más de 20 fuentes de datos en vivo. Gratis. Código abierto.",
     type: "website",
     siteName: SITE_NAME,
-    locale: "en_US",
+    locale: "es_ES",
     url: SITE_URL,
     images: [
       {
         url: `${SITE_URL}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "OSIRIS — Open Source Intelligence Platform with Live Tracking & OSINT Tools",
+        alt: "KANDELeye — Plataforma de Inteligencia con Seguimiento en Vivo y Herramientas OSINT",
         type: "image/png",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "🛰️ OSIRIS — Open Source Palantir Alternative | Live Tracking + OSINT Tools",
-    description: "Track 10K+ flights, satellites & CCTV worldwide. Run Nmap, DNS, WHOIS scans from your browser. 20+ live intel feeds. Free & open source.",
-    creator: "@simplifaisoul",
-    site: "@simplifaisoul",
+    title: "🛡️ KANDELeye — Alternativa Open Source a Palantir | Seguimiento en Vivo + OSINT",
+    description: "Monitorea más de 10K aeronaves, satélites y CCTV mundial. Escaneos Nmap, DNS, WHOIS desde tu navegador. Más de 20 fuentes de datos en vivo. Gratis y código abierto.",
+    creator: "@kandelsecurity",
+    site: "@kandelsecurity",
     images: [`${SITE_URL}/og-image.png`],
   },
   category: "technology",
@@ -120,9 +115,9 @@ export const metadata: Metadata = {
   other: {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
-    "apple-mobile-web-app-title": "OSIRIS",
+    "apple-mobile-web-app-title": "KANDELeye",
     "mobile-web-app-capable": "yes",
-    "msapplication-TileColor": "#06060C",
+    "msapplication-TileColor": "#0F0A15",
     "msapplication-config": "none",
   },
 };
@@ -131,8 +126,8 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "OSIRIS — OSINT Toolkit & Intelligence Platform",
-  alternateName: ["OSIRIS", "OsirisAI", "Osiris OSINT"],
+  name: "KANDELeye — Plataforma Unificada de Inteligencia y Auditoría",
+  alternateName: ["KANDELeye", "KANDEL Intelligence", "KANDEL OSINT"],
   url: SITE_URL,
   description: SITE_DESCRIPTION,
   applicationCategory: "SecurityApplication",
@@ -145,31 +140,31 @@ const jsonLd = {
     availability: "https://schema.org/InStock",
   },
   featureList: [
-    "Nmap port scanning from the browser — no install required",
-    "DNS record lookup (A, AAAA, MX, NS, TXT, CNAME)",
-    "WHOIS domain registration lookup",
-    "SSL/TLS certificate transparency search",
-    "BGP routing & ASN lookup",
-    "IP geolocation & threat intelligence",
-    "Real-time flight tracking (10,000+ aircraft via ADS-B)",
-    "Satellite tracking (2,000+ objects including ISS)",
-    "Worldwide CCTV camera monitoring (1,400+ feeds)",
-    "Earthquake monitoring (USGS live feed)",
-    "Wildfire detection (NASA FIRMS satellite data)",
-    "Nuclear facility mapping (worldwide)",
-    "Severe weather alerts & tracking",
-    "Cyber threat & CVE intelligence",
-    "Space weather & solar storm monitoring",
-    "GPS jamming detection",
-    "Defense & commodity market tracking",
-    "SIGINT news aggregation feed",
-    "Interactive 3D globe with day/night cycle",
-    "Region intelligence dossier reports",
+    "Escaneo de puertos Nmap desde el navegador — sin instalación requerida",
+    "Búsqueda de registros DNS (A, AAAA, MX, NS, TXT, CNAME)",
+    "Consulta de registro de dominio WHOIS",
+    "Búsqueda de transparencia de certificados SSL/TLS",
+    "Búsqueda de rutas BGP y ASN",
+    "Geolocalización IP e inteligencia de amenazas",
+    "Seguimiento de vuelos en tiempo real (10,000+ aeronaves via ADS-B)",
+    "Seguimiento de satélites (2,000+ objetos incluyendo ISS)",
+    "Monitoreo de cámaras CCTV mundiales (17,000+ feeds)",
+    "Monitoreo de terremotos (USGS en vivo)",
+    "Detección de incendios (datos satelitales NASA FIRMS)",
+    "Mapeo de instalaciones nucleares (mundial)",
+    "Alertas de clima severo y seguimiento",
+    "Inteligencia de ciberamenazas y CVE",
+    "Clima espacial y monitoreo de tormentas solares",
+    "Detección de jamming GPS",
+    "Seguimiento de mercado de defensa y materias primas",
+    "Aggregación de noticias SIGINT",
+    "Globo 3D interactivo con ciclo día/noche",
+    "Informes de inteligencia regional",
   ],
   screenshot: `${SITE_URL}/og-image.png`,
   author: {
     "@type": "Organization",
-    name: "Osiris Project",
+    name: "KANDEL Security",
     url: SITE_URL,
   },
 };
@@ -180,7 +175,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr">
+    <html lang="es" dir="ltr">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -198,7 +193,7 @@ export default function RootLayout({
 
       </head>
       <body className="antialiased">
-        <ErrorBoundary name="OSIRIS Core">
+        <ErrorBoundary name="KANDELeye Core">
           {children}
         </ErrorBoundary>
       </body>

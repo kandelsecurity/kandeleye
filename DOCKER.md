@@ -1,155 +1,158 @@
-# Self-Hosting OSIRIS with Docker
+# Auto-alojamiento de KANDELeye con Docker
 
-OSIRIS ships as a self-contained Next.js standalone build. This guide covers
-running it with Docker / Docker Compose, deploying it as a [CasaOS](https://casaos.io)
-app, and configuring the optional API keys.
+KANDELeye se distribuye como un build standalone de Next.js autosuficiente.
+Esta guía cubre su ejecución con Docker / Docker Compose, despliegue como
+aplicación [CasaOS](https://casaos.io) y configuración de las claves API opcionales.
 
-> **TL;DR:** OSIRIS runs fully **without any API keys**. All core feeds
-> (aviation, satellites, fires, earthquakes, weather, news, CVEs) use public
-> keyless sources. Keys only matter for the optional RECON scanner backend and
-> for raising rate limits on a few feeds.
+> **TL;DR:** KANDELeye funciona completamente **sin ninguna clave API**.
+> Todas las fuentes principales (aviación, satélites, incendios, terremotos,
+> clima, noticias, CVE) usan fuentes públicas sin clave. Las claves solo
+> importan para el backend opcional del escáner RECON y para aumentar
+> los límites de tasa en algunas fuentes.
 
 ---
 
-## 1. Docker Compose (recommended)
+## 1. Docker Compose (recomendado)
 
 ```bash
-git clone https://github.com/simplifaisoul/osiris.git
-cd osiris
+git clone https://github.com/kandelsecurity/kandeleye.git
+cd kandeleye
 
-# optional: configure keys / scanner backend
-cp .env.template .env        # then edit .env
+# opcional: configurar claves / backend del escáner
+cp .env.template .env        # luego editar .env
 
 docker compose up -d
 ```
 
-Open <http://localhost:3000>.
+Abre <http://localhost:3000>.
 
-What the compose file does:
+Qué hace el archivo compose:
 
-- **`build:`** — compose builds the image locally from the `Dockerfile`, so
-  you always run the code you just cloned. To run the prebuilt registry image
-  instead, add `image: ghcr.io/simplifaisoul/osiris:latest` to the `osiris`
-  service and drop the `build:` block.
-- **`env_file: .env` (`required: false`)** — if a `.env` file exists its
-  values are injected into the container; if it's missing, OSIRIS still starts
-  with the keyless feeds.
-- **`ports: ${OSIRIS_PORT:-3000}:3000`** — the web UI. The container always
-  listens on 3000; the published **host** port is `OSIRIS_PORT` (default
-  `3000`). Set `OSIRIS_PORT` in `.env` to remap it, e.g. `OSIRIS_PORT=3005`
-  when 3000 is already in use — no need to edit the compose file.
-- **`restart: unless-stopped`** — survives reboots.
+- **`build:`** — compose construye la imagen localmente desde el `Dockerfile`,
+  así siempre ejecutas el código que acabas de clonar. Para usar la imagen
+  preconstruida del registro en su lugar, añade
+  `image: ghcr.io/kandelsecurity/kandeleye:latest` al servicio `kandeleye`
+  y elimina el bloque `build:`.
+- **`env_file: .env` (`requerido: no`)** — si existe un archivo `.env`,
+  sus valores se inyectan en el contenedor; si no existe, KANDELeye sigue
+  funcionando con las fuentes sin clave.
+- **`ports: ${OSIRIS_PORT:-3000}:3000`** — la interfaz web. El contenedor
+  siempre escucha en el puerto 3000; el **puerto host** publicado es
+  `OSIRIS_PORT` (por defecto `3000`). Configura `OSIRIS_PORT` en `.env`
+  para redirigirlo, por ejemplo `OSIRIS_PORT=3005` cuando el 3000 ya
+  esté en uso — no necesitas editar el archivo compose.
+- **`restart: unless-stopped`** — sobrevive a reinicios.
 
-Common commands:
+Comandos comunes:
 
 ```bash
-docker compose logs -f          # follow logs
-docker compose up -d --build    # rebuild locally after pulling new code
-docker compose down             # stop & remove
+docker compose logs -f          # seguir logs
+docker compose up -d --build    # reconstruir localmente tras obtener nuevo código
+docker compose down             # detener y eliminar
 ```
 
-### Pull the prebuilt image from GHCR
+### Descargar la imagen preconstruida de GHCR
 
-A prebuilt image for `linux/amd64` and `linux/arm64` is published to the GitHub
-Container Registry on every push to `master` and every `v*.*.*` tag, so you can
-run OSIRIS without building anything:
+Una imagen preconstruida para `linux/amd64` y `linux/arm64` se publica en
+el GitHub Container Registry en cada push a `master` y cada etiqueta `v*.*.*`,
+así puedes ejecutar KANDELeye sin construir nada:
 
 ```bash
-docker pull ghcr.io/simplifaisoul/osiris:latest   # or a pinned tag, e.g. :0.1.0
-docker run -d --name osiris \
+docker pull ghcr.io/kandelsecurity/kandeleye:latest   # o una versión fija, ej. :1.0.0
+docker run -d --name kandeleye \
   -p 3005:3000 --env-file .env --restart unless-stopped \
-  ghcr.io/simplifaisoul/osiris:latest
+  ghcr.io/kandelsecurity/kandeleye:latest
 ```
 
-The package is public — no `docker login` is required to pull it.
+El paquete es público — no se requiere `docker login` para descargarlo.
 
-### Plain `docker run`
+### `docker run` simple
 
 ```bash
-docker build -t osiris:latest .
-docker run -d --name osiris -p 3000:3000 --env-file .env --restart unless-stopped osiris:latest
+docker build -t kandeleye:latest .
+docker run -d --name kandeleye -p 3000:3000 --env-file .env --restart unless-stopped kandeleye:latest
 ```
 
-### Image details
+### Detalles de la imagen
 
-Multi-stage build on `node:22-alpine`, runs as a non-root user (`nextjs`,
-uid 1001), serves Next.js standalone via `node server.js` on port 3000.
-Final image is ~220 MB. Build excludes `node_modules`, `.next`, `.git` and the
-repo's large `*.diff` artifacts via `.dockerignore`.
+Build multi-stage en `node:22-alpine`, ejecuta como usuario no root
+(`nextjs`, uid 1001), sirve Next.js standalone via `node server.js` en el
+puerto 3000. La imagen final es ~220 MB. La construcción excluye `node_modules`,
+`.next`, `.git` y los grandes artefactos `*.diff` del repositorio via `.dockerignore`.
 
 ---
 
 ## 2. CasaOS
 
-The compose file includes an `x-casaos:` metadata block (title, description,
-icon, port map, env descriptions) that plain Docker Compose ignores but CasaOS
-reads.
+El archivo compose incluye un bloque de metadatos `x-casaos:` (título,
+descripción, icono, mapeo de puerto, descripciones de env) que Docker Compose
+ignora pero CasaOS lee.
 
-**Install:**
+**Instalación:**
 
-1. On the CasaOS host, clone the repo somewhere persistent (e.g.
-   `/DATA/AppData/osiris`).
-2. CasaOS dashboard → **`+`** → **Install a customized app** → paste the
-   contents of `docker-compose.yml`.
-   *(or simply run `docker compose up -d` from the cloned directory).*
-3. OSIRIS appears on the dashboard with its icon, reachable on host port
-   `3000` (or whatever `OSIRIS_PORT` you set in `.env`).
+1. En el host CasaOS, clona el repositorio en una ubicación persistente (ej.
+   `/DATA/AppData/kandeleye`).
+2. Dashboard de CasaOS → **`+`** → **Instalar una app personalizada** → pega el
+   contenido de `docker-compose.yml`.
+   *(o simplemente ejecuta `docker compose up -d` desde el directorio clonado).*
+3. KANDELeye aparece en el dashboard con su icono, accesible en el puerto
+   host `3000` (o lo que configures en `OSIRIS_PORT` en `.env`).
 
-The app icon is the gold Eye-of-Horus mark in
-`public/casaos-icon.png` (512×512 PNG), referenced by the `icon:` URL in the
-metadata.
+El icono de la app es la marca del Ojo de Horus dorada en
+`public/casaos-icon.png` (512×512 PNG), referenciada por la URL `icon:`
+en los metadatos.
 
-> CasaOS stores imported compose files under `/var/lib/casaos/apps/`, so a
-> relative `build:` context may not resolve there. If importing the YAML
-> directly, either build/tag `osiris:latest` first
-> (`docker build -t osiris:latest /path/to/osiris`) or replace the `build:`
-> block with `image: ghcr.io/simplifaisoul/osiris:latest`.
+> CasaOS almacena los archivos compose importados bajo `/var/lib/casaos/apps/`,
+> por lo que un `build:` relativo puede no resolver allí. Si importas el YAML
+> directamente, construye/etiqueta `kandeleye:latest` primero
+> (`docker build -t kandeleye:latest /path/to/kandeleye`) o reemplaza el bloque
+> `build:` con `image: ghcr.io/kandelsecurity/kandeleye:latest`.
 
 ---
 
-## 3. API keys & data sources
+## 3. Claves API y fuentes de datos
 
-Copy `.env.template` to `.env` and fill in only what you need.
+Copia `.env.template` a `.env` y rellena solo lo que necesites.
 
-### What the code actually reads today
+### Qué lee el código actualmente
 
-| Variable | Purpose | Required for |
-|----------|---------|--------------|
-| `SCANNER_URL` | RECON scanner backend base URL (e.g. `http://scanner:7700`) | RECON toolkit (quick/ssl/headers/rdns/subdomains/tech/whois/geoloc/vuln) |
-| `SCANNER_KEY` | Shared secret; **must equal the backend's `OSIRIS_KEY`** | RECON toolkit |
+| Variable | Propósito | Requerido para |
+|----------|-----------|----------------|
+| `SCANNER_URL` | URL base del backend del escáner RECON (ej. `http://scanner:7700`) | Toolkit RECON (quick/ssl/headers/rdns/subdomains/tech/whois/geoloc/vuln) |
+| `SCANNER_KEY` | Secreto compartido; **debe ser igual a `OSIRIS_KEY` del backend** | Toolkit RECON |
 
-Without `SCANNER_URL`/`SCANNER_KEY` the RECON endpoints return `503` and the
-rest of OSIRIS works normally. Generate a key with `openssl rand -hex 32`.
+Sin `SCANNER_URL`/`SCANNER_KEY` los endpoints RECON devuelven `503` y
+el resto de KANDELeye funciona normalmente. Genera una clave con `openssl rand -hex 32`.
 
-### Optional keys (reserved / for higher rate limits)
+### Claves opcionales (reservadas / para mayores límites de tasa)
 
-These are documented for completeness and forward-compatibility. The current
-data routes use **keyless** public feeds, so these are not consumed yet — set
-them only if you extend the relevant route or hit rate limits.
+Están documentadas por completitud y compatibilidad futura. Las rutas de
+datos actuales usan **fuentes públicas sin clave**, así que no se consumen aún —
+configúralas solo si extiendes la ruta relevante o alcanzas límites de tasa.
 
-| Variable | Service | How to get it (all free) |
-|----------|---------|--------------------------|
-| `FIRMS_API_KEY` | NASA FIRMS active fires | Enter an email at <https://firms.modaps.eosdis.nasa.gov/api/map_key/> — the `MAP_KEY` is emailed instantly. Limit 5000 req / 10 min. |
-| `OPENSKY_CLIENT_ID` / `OPENSKY_CLIENT_SECRET` | OpenSky aviation | Create an account at <https://opensky-network.org/>, open **Account → API client**, create a client and copy id/secret. **OAuth2 only since March 2025** (username/password auth removed). |
-| `N2YO_API_KEY` | N2YO satellites | Register at <https://www.n2yo.com/login/register/>, then **Profile → generate API key**. Limit 1000 req / hour; key can't be regenerated. |
-| `AIS_API_KEY` | aisstream.io maritime | Sign up at <https://aisstream.io/>, create a key on the **API Keys** page. Used over `wss://stream.aisstream.io/v0/stream`. |
+| Variable | Servicio | Cómo obtenerla (todas gratuitas) |
+|----------|----------|-------------------------------------|
+| `FIRMS_API_KEY` | NASA FIRMS incendios activos | Entra un email en <https://firms.modaps.eosdis.nasa.gov/api/map_key/> — el `MAP_KEY` se envía por email instantáneamente. Límite 5000 req / 10 min. |
+| `OPENSKY_CLIENT_ID` / `OPENSKY_CLIENT_SECRET` | OpenSky aviación | Crea una cuenta en <https://opensky-network.org/>, abre **Account → API client**, crea un cliente y copia id/secret. **Solo OAuth2 desde marzo 2025** (auth usuario/contraseña eliminada). |
+| `N2YO_API_KEY` | N2YO satélites | Regístrate en <https://www.n2yo.com/login/register/>, luego **Profile → generate API key**. Límite 1000 req / hora; la clave no puede regenerarse. |
+| `AIS_API_KEY` | aisstream.io maritime | Regístrate en <https://aisstream.io/>, crea una clave en la página **API Keys**. Usado sobre `wss://stream.aisstream.io/v0/stream`. |
 
-> Keep `.env` out of version control — it is already in `.gitignore`. Only
-> `.env.template` (no secrets) is committed.
+> Mantén `.env` fuera del control de versiones — ya está en `.gitignore`. Solo
+> `.env.template` (sin secretos) está comprometido.
 
-### Optional runtime overrides
+### Sobreescrituras de runtime opcionales
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `OSIRIS_TELEGRAM_CHANNELS` | Comma-separated list of public Telegram channel usernames (no `@`) to scrape for the **Telegram OSINT** map layer. Overrides the curated default set. | `osintdefender,insiderpaper,aljazeeraenglish,nexta_live,war_monitor` |
-| `OSIRIS_PORT` | Host port the compose file publishes (container itself always listens on 3000). | `3000` |
+| Variable | Propósito | Default |
+|----------|-----------|---------|
+| `OSIRIS_TELEGRAM_CHANNELS` | Lista separada por comas de nombres de canales públicos de Telegram (sin `@`) para el mapa **Telegram OSINT**. Sobrescribe el conjunto por defecto curado. | `osintdefender,insiderpaper,aljazeeraenglish,nexta_live,war_monitor` |
+| `OSIRIS_PORT` | Puerto host que publica el compose (el contenedor símpre escucha en 3000). | `3000` |
 
-### Keyless sources (no configuration needed)
+### Fuentes sin clave (sin configuración necesaria)
 
-Aviation → `adsb.lol` · Satellites → `celestrak.org` (TLE) · Fires →
-NASA FIRMS open-data CSV · Earthquakes → USGS · Weather → NASA EONET · Space
-weather → NOAA SWPC · CVEs → NVD · News → public RSS / HLS streams · CCTV →
-public traffic-authority feeds · Crypto (BTC) → `blockstream.info` · Crypto
+Aviación → `adsb.lol` · Satélites → `celestrak.org` (TLE) · Incendios →
+NASA FIRMS open-data CSV · Terremotos → USGS · Clima → NASA EONET · Clima
+espacial → NOAA SWPC · CVEs → NVD · Noticias → streams RSS / HLS públicos · CCTV →
+fuentes públicas de autoridades de tráfico · Crypto (BTC) → `blockstream.info` · Crypto
 (ETH) → `eth.blockscout.com` ([Blockscout](https://github.com/blockscout/blockscout)
-open-source explorer) · OFAC SDN sanctions → [OpenSanctions](https://www.opensanctions.org)
-mirror (CC-BY 4.0) · Telegram OSINT → public `t.me/s/<channel>` web preview.
+explorador open-source) · Sanciones OFAC SDN → [OpenSanctions](https://www.opensanctions.org)
+mirror (CC-BY 4.0) · Telegram OSINT → preview web público `t.me/s/<channel>`.

@@ -269,11 +269,11 @@ export default function Dashboard() {
   const [scanTargets, setScanTargets] = useState<any[]>([]);
   const [drawnPolygons, setDrawnPolygons] = useState<DrawnShape[]>([]);
   const [demoMode, setDemoMode] = useState(false);
-  const [osirisTheme, setOsirisTheme] = useState<'core'|'ghost'>('core');
+  const [kandeleyeTheme, setKandeleyeTheme] = useState<'core'|'ghost'>('core');
 
   useEffect(() => {
-    document.body.className = osirisTheme === 'core' ? '' : `theme-${osirisTheme}`;
-  }, [osirisTheme]);
+    document.body.className = kandeleyeTheme === 'core' ? '' : `theme-${kandeleyeTheme}`;
+  }, [kandeleyeTheme]);
 
   /* Style Studio overrides are inline on <body>, so they survive the theme
      swap above and only need reapplying once per load. */
@@ -473,7 +473,7 @@ export default function Dashboard() {
           setLocationLabel(label);
           lastGeocodedPos.current = coords;
         }
-      } catch (e) { console.warn('[OSIRIS] Suppressed error:', e instanceof Error ? e.message : e); }
+      } catch (e) { console.warn('[KANDELeye] Suppressed error:', e instanceof Error ? e.message : e); }
     }, 3000); // 3s debounce (was 1.5s)
   }, []);
 
@@ -483,7 +483,7 @@ export default function Dashboard() {
     try {
       const res = await fetch(`/api/region-dossier?lat=${coords.lat}&lng=${coords.lng}`);
       if (res.ok) setRegionDossier(await res.json());
-    } catch (e) { console.warn('[OSIRIS] Suppressed error:', e instanceof Error ? e.message : e); } finally { setDossierLoading(false); }
+    } catch (e) { console.warn('[KANDELeye] Suppressed error:', e instanceof Error ? e.message : e); } finally { setDossierLoading(false); }
   }, []);
   // Entity click handler (hoisted from JSX to comply with Rules of Hooks - Fixes #113)
   const handleEntityClick = useCallback((entity: any) => {
@@ -588,7 +588,7 @@ export default function Dashboard() {
       }
       return false;
     } catch (e) {
-      console.warn('[OSIRIS] Suppressed error:', e instanceof Error ? e.message : e);
+      console.warn('[KANDELeye] Suppressed error:', e instanceof Error ? e.message : e);
       setBackendStatus('error');
       return false;
     }
@@ -618,7 +618,7 @@ export default function Dashboard() {
       try {
         const r = await fetch('/api/space-weather');
         if (r.ok) setSpaceWeather(await r.json());
-      } catch (e) { console.warn('[OSIRIS] Suppressed error:', e instanceof Error ? e.message : e); }
+      } catch (e) { console.warn('[KANDELeye] Suppressed error:', e instanceof Error ? e.message : e); }
     }, 5000);
 
     // Polling — OPTIMIZED intervals to minimize edge requests
@@ -646,7 +646,7 @@ export default function Dashboard() {
       };
       setDataVersion(value => value + 1);
       setBackendStatus('connected');
-    }, () => console.warn('[OSIRIS] Camera catalogue load failed; bounded retry scheduled'));
+    }, () => console.warn('[KANDELeye] Camera catalogue load failed; bounded retry scheduled'));
   }, [activeLayers.cctv]);
 
   useEffect(() => {
@@ -1141,7 +1141,7 @@ export default function Dashboard() {
       {/* ── MAP ── */}
       <ErrorBoundary name="Map">
         <OsirisMap 
-          key={`${osirisTheme}-${mapRetry}`}
+          key={`${kandeleyeTheme}-${mapRetry}`}
           onRetryMap={() => setMapRetry(retry => retry + 1)}
           data={data} 
           activeLayers={activeLayers} 
@@ -1159,7 +1159,7 @@ export default function Dashboard() {
           sweepData={sweepData}
           scanTargets={scanTargets}
           demoMode={demoMode}
-          theme={osirisTheme}
+          theme={kandeleyeTheme}
           arcgisLayers={arcgisLayers.filter(l => l.visible).map(l => ({ id: l.id, title: l.title, geojson: l.geojson, color: l.color, opacity: l.opacity }))}
           onMapCenter={setMapCenter}
           route={activeRoute}
@@ -1353,7 +1353,7 @@ export default function Dashboard() {
 
 
       {/* ── NEW SIDEBAR (Root Level) ── */}
-      {showLayers && !isMobile && <LayerPanel {...terrainPanelProps} data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} theme={osirisTheme} setTheme={setOsirisTheme} capabilities={capabilities} />}
+      {showLayers && !isMobile && <LayerPanel {...terrainPanelProps} data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} theme={kandeleyeTheme} setTheme={setOsirisTheme} capabilities={capabilities} />}
 
 
 
@@ -1731,7 +1731,7 @@ export default function Dashboard() {
                           <div><div className="hud-label" style={{fontSize:'9px'}}>NUC</div><div className="hud-value text-[10px]" style={{color:'var(--accent-nuclear)'}}>{(data.infrastructure?.length||0)}</div></div>
                         </div>
                       </div>
-                      <LayerPanel {...terrainPanelProps} data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} isMobile={true} theme={osirisTheme} setTheme={setOsirisTheme} capabilities={capabilities} />
+                      <LayerPanel {...terrainPanelProps} data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} isMobile={true} theme={kandeleyeTheme} setTheme={setOsirisTheme} capabilities={capabilities} />
                       <div className="mt-8">
                         <ViewPresets onNavigate={(lat, lng, zoom) => { setFlyToLocation({ lat, lng, zoom, ts: Date.now() }); setMobilePanel(null); }} />
                       </div>

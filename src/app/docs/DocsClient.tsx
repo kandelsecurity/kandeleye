@@ -22,7 +22,7 @@ const API_SECTIONS = [
 ];
 
 const ALL_SECTIONS = [...GUIDE_SECTIONS, ...API_SECTIONS];
-const FALLBACK_ORIGIN = 'https://osirisai.live';
+const FALLBACK_ORIGIN = 'https://kandeleye.live';
 
 export default function DocsClient() {
   const [active, setActive] = useState('overview');
@@ -152,7 +152,7 @@ export default function DocsClient() {
             </svg>
             <span className="flex flex-col leading-none">
               <span className="text-[12px] font-bold tracking-[0.3em] text-[var(--gold-primary)] font-mono">
-                OSIRIS
+                KANDELeye
               </span>
               <span className="text-[9px] font-mono tracking-[0.22em] text-[var(--text-muted)] uppercase mt-[3px]">
                 Docs
@@ -179,7 +179,7 @@ export default function DocsClient() {
           </button>
 
           <a
-            href="https://github.com/simplifaisoul/osiris"
+            href="https://github.com/kandelsecurity/kandeleye"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub repository"
@@ -268,12 +268,12 @@ export default function DocsClient() {
               <span className="text-[var(--text-heading)]">Build on the</span>
               <br />
               <span className="bg-gradient-to-r from-[var(--gold-primary)] via-[#F0D060] to-[var(--cyan-primary)] bg-clip-text text-transparent">
-                OSIRIS platform
+                KANDELeye platform
               </span>
             </h1>
 
             <p className="text-[15px] leading-[1.75] text-[var(--text-secondary)] max-w-[42rem]">
-              OSIRIS aggregates aviation, maritime, seismic, conflict, cyber, and OSINT feeds onto a single
+              KANDELeye aggregates aviation, maritime, seismic, conflict, cyber, and OSINT feeds onto a single
               GPU-rendered map — and exposes every one of them as a plain HTTP endpoint. This is the same API the
               dashboard runs on. There is no separate, privileged internal tier.
             </p>
@@ -373,8 +373,8 @@ print(len(data["commercial_flights"]), "commercial")`,
           </Section>
 
           <Section id="self-hosting" eyebrow="Guide" title="Self-Hosting">
-            <p>OSIRIS needs Node 20+ and no database. A local instance is three commands:</p>
-            <Pre label="Local development" lang="bash">{`git clone https://github.com/simplifaisoul/osiris.git
+            <p>KANDELeye needs Node 20+ and no database. A local instance is three commands:</p>
+            <Pre label="Local development" lang="bash">{`git clone https://github.com/kandelsecurity/kandeleye.git
 cd osiris
 npm install
 npm run dev        # http://localhost:3000`}</Pre>
@@ -385,7 +385,7 @@ npm test           # vitest
 npm run test:live  # includes tests that hit live upstream feeds`}</Pre>
             <p>
               A <Code>Dockerfile</Code> and <Code>docker-compose.yml</Code> ship with the repository. The container
-              always listens on port 3000 internally; <Code>OSIRIS_PORT</Code> controls the host port it is published
+              always listens on port 3000 internally; <Code>KANDELeye_PORT</Code> controls the host port it is published
               on.
             </p>
             <Pre label="Docker" lang="bash">{`cp .env.example .env
@@ -404,18 +404,18 @@ docker compose up -d`}</Pre>
               {[
                 {
                   k: 'SCANNER_URL / SCANNER_KEY',
-                  v: 'Points at the separate RECON scanner backend. SCANNER_KEY must equal that backend’s OSIRIS_KEY. Leave both empty to disable RECON — /api/scanner then returns 503 by design.',
+                  v: 'Points at the separate RECON scanner backend. SCANNER_KEY must equal that backend’s KANDELeye_KEY. Leave both empty to disable RECON — /api/scanner then returns 503 by design.',
                 },
                 {
                   k: 'SDK_INGEST_KEY',
                   v: 'Shared secret for /api/sdk/ingest. The endpoint fails closed: while this is unset, ingestion is disabled and returns 503.',
                 },
                 {
-                  k: 'OSIRIS_TELEGRAM_CHANNELS',
+                  k: 'KANDELeye_TELEGRAM_CHANNELS',
                   v: 'Comma-separated public Telegram channel names (no @) for the Telegram OSINT layer, overriding the curated default set.',
                 },
                 {
-                  k: 'OSIRIS_PORT',
+                  k: 'KANDELeye_PORT',
                   v: 'Host port the UI is published on. The container itself always listens on 3000.',
                 },
               ].map(row => (
@@ -596,10 +596,10 @@ docker compose up -d`}</Pre>
           {/* Footer */}
           <footer className="border-t border-white/[0.06] pt-6 pb-16 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-mono text-[var(--text-muted)]">
             {[
-              { href: 'https://github.com/simplifaisoul/osiris', label: 'GitHub' },
+              { href: 'https://github.com/kandelsecurity/kandeleye', label: 'GitHub' },
               { href: 'https://discord.gg/EPaFD5FFKf', label: 'Discord' },
               { href: 'https://x.com/soulsimplifai', label: 'X' },
-              { href: 'https://github.com/simplifaisoul/osiris/issues', label: 'Report an issue' },
+              { href: 'https://github.com/kandelsecurity/kandeleye/issues', label: 'Report an issue' },
             ].map(l => (
               <a
                 key={l.label}
